@@ -5,6 +5,8 @@ import android.text.TextUtils;
 import com.example.zeph.myweater.db.City;
 import com.example.zeph.myweater.db.District;
 import com.example.zeph.myweater.db.Province;
+import com.example.zeph.myweater.db.Weather;
+import com.google.gson.Gson;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -14,7 +16,7 @@ public class Utility {
   /**
    * 解析省
    */
-  public static boolean handleProvincerResponse(String response){
+  public static boolean handleProvinceResponse(String response) {
     if (!TextUtils.isEmpty(response)) {
       try {
         JSONArray allProvince = new JSONArray(response);
@@ -26,7 +28,7 @@ public class Utility {
           province.save();
         }
         return true;
-      }catch (JSONException e){
+      } catch (JSONException e) {
         e.printStackTrace();
       }
     }
@@ -36,12 +38,12 @@ public class Utility {
   /**
    * 解析市
    */
-  public static boolean handleCityResponse(String response, int provinceId){
+  public static boolean handleCityResponse(String response, int provinceId) {
     if (!TextUtils.isEmpty(response)) {
-      try{
+      try {
         JSONArray allCity = new JSONArray(response);
         for (int i = 0; i < allCity.length(); i++) {
-          JSONObject cityObject =  allCity.getJSONObject(i);
+          JSONObject cityObject = allCity.getJSONObject(i);
           City city = new City();
           city.setCityCode(cityObject.getInt("id"));
           city.setCityName(cityObject.getString("name"));
@@ -49,7 +51,7 @@ public class Utility {
           city.save();
         }
         return true;
-      }catch (JSONException e){
+      } catch (JSONException e) {
         e.printStackTrace();
       }
     }
@@ -59,9 +61,9 @@ public class Utility {
   /**
    * 解析区
    */
-  public static boolean handleDistrictResponse(String response, int cityId){
+  public static boolean handleDistrictResponse(String response, int cityId) {
     if (!TextUtils.isEmpty(response)) {
-      try{
+      try {
         JSONArray allDistrict = new JSONArray(response);
         for (int i = 1; i < allDistrict.length(); i++) {
           JSONObject districtObject = allDistrict.getJSONObject(i);
@@ -72,11 +74,27 @@ public class Utility {
           district.save();
         }
         return true;
-      }catch (JSONException e){
+      } catch (JSONException e) {
         e.printStackTrace();
       }
     }
     return false;
+  }
+
+  /**
+   * 解析天气
+   */
+  public static Weather handleWeatherResponse(String response) {
+    try {
+      JSONObject jsonObject = new JSONObject(response);
+      JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");
+      String weatherContent = jsonArray.getJSONObject(0).toString();
+      return new Gson().fromJson(weatherContent, Weather.class);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return null;
+
   }
 
 }

@@ -3,35 +3,33 @@ package com.example.zeph.myweater.db;
 
 import org.litepal.crud.DataSupport;
 
-public class Province extends DataSupport{
+public class Province extends DataSupport {
 
-    private int id ;
+  private int id;
+  private int provinceCode;
+  private String provinceName;
 
-    private int provinceCode ;
+  public int getId() {
+    return id;
+  }
 
-    private String provinceName ;
+  public void setId(int id) {
+    this.id = id;
+  }
 
-    public int getId() {
-        return id;
-    }
+  public int getProvinceCode() {
+    return provinceCode;
+  }
 
-    public void setId(int id) {
-        this.id = id;
-    }
+  public void setProvinceCode(int provinceCode) {
+    this.provinceCode = provinceCode;
+  }
 
-    public int getProvinceCode() {
-        return provinceCode;
-    }
+  public String getProvinceName() {
+    return provinceName;
+  }
 
-    public void setProvinceCode(int provinceCode) {
-        this.provinceCode = provinceCode;
-    }
-
-    public String getProvinceName() {
-        return provinceName;
-    }
-
-    public void setProvinceName(String provinceName) {
-        this.provinceName = provinceName;
-    }
+  public void setProvinceName(String provinceName) {
+    this.provinceName = provinceName;
+  }
 }

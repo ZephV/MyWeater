@@ -1,6 +1,7 @@
 package com.example.zeph.myweater;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -54,10 +55,10 @@ public class ChooseAreaFragment extends Fragment {
   public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
       Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.choose_area, container, false);
-    listView = (ListView)view.findViewById(R.id.area_list_view);
+    listView = (ListView) view.findViewById(R.id.area_list_view);
     backButton = (Button) view.findViewById(R.id.tbn_back);
     tv_title = (TextView) view.findViewById(R.id.txt_title);
-    adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1 ,dataList);
+    adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, dataList);
     listView.setAdapter(adapter);
     return view;
   }
@@ -68,12 +69,18 @@ public class ChooseAreaFragment extends Fragment {
     listView.setOnItemClickListener(new OnItemClickListener() {
       @Override
       public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        if (currentLevel == LEVEL_PROVINCE){
+        if (currentLevel == LEVEL_PROVINCE) {
           selectedProvince = provinceList.get(position);
           queryCities();
-        }else if (currentLevel == LEVEL_CITY){
+        } else if (currentLevel == LEVEL_CITY) {
           selectedCity = cityList.get(position);
           queryDistrict();
+        } else if (currentLevel == LEVEL_DISTRICT) {
+          String weatherId = districtList.get(position).getWeatherId();
+          Intent intent = new Intent(getActivity(), WeatherActivity.class);
+          intent.putExtra("weather_id", weatherId);
+          startActivity(intent);
+          getActivity().finish();
         }
       }
 
@@ -81,15 +88,15 @@ public class ChooseAreaFragment extends Fragment {
     backButton.setOnClickListener(new OnClickListener() {
       @Override
       public void onClick(View v) {
-        if (currentLevel == LEVEL_CITY){
+        if (currentLevel == LEVEL_CITY) {
           queryProvinces();
-        }else if (currentLevel == LEVEL_DISTRICT){
+        } else if (currentLevel == LEVEL_DISTRICT) {
           queryCities();
         }
       }
     });
     queryProvinces();
-    LogUtil.d("msg","A点爆破");
+    LogUtil.d("msg", "A点爆破");
   }
 
   private void queryProvinces() {
@@ -110,41 +117,41 @@ public class ChooseAreaFragment extends Fragment {
     }
   }
 
-  private void queryCities(){
+  private void queryCities() {
     tv_title.setText(selectedProvince.getProvinceName());
     backButton.setVisibility(View.VISIBLE);
     cityList = DataSupport.where("provinceid = ?",
         String.valueOf(selectedProvince.getId())).find(City.class);
-    if (cityList.size() > 0){
-        dataList.clear();
-      for (City city : cityList){
+    if (cityList.size() > 0) {
+      dataList.clear();
+      for (City city : cityList) {
         dataList.add(city.getCityName());
       }
       adapter.notifyDataSetChanged();
       listView.setSelection(0);
       currentLevel = LEVEL_CITY;
-    }else {
+    } else {
       int provinceCode = selectedProvince.getProvinceCode();
-      String address = "http://guolin.tech/api/china/"+provinceCode;
+      String address = "http://guolin.tech/api/china/" + provinceCode;
       queryFromServer(address, "city");
     }
   }
 
-  private void queryDistrict(){
+  private void queryDistrict() {
     tv_title.setText(selectedCity.getCityName());
     backButton.setVisibility(View.VISIBLE);
     districtList = DataSupport.where("cityid = ?",
         String.valueOf(selectedCity.getId())).find(District.class);
-    if (districtList.size() > 0){
+    if (districtList.size() > 0) {
       dataList.clear();
-      LogUtil.d("msg","dataList清洁完毕");
-      for (District district : districtList){
+      LogUtil.d("msg", "dataList清洁完毕");
+      for (District district : districtList) {
         dataList.add(district.getDistrictName());
       }
       adapter.notifyDataSetChanged();
       listView.setSelection(0);
       currentLevel = LEVEL_DISTRICT;
-    }else {
+    } else {
       int provinceCode = selectedProvince.getProvinceCode();
       int cityCode = selectedCity.getCityCode();
       String address = "http://guolin.tech/api/china/"
@@ -153,7 +160,7 @@ public class ChooseAreaFragment extends Fragment {
     }
   }
 
-  private void queryFromServer(String address, final String type){
+  private void queryFromServer(String address, final String type) {
     HttpUtil.sendOkHttpRequest(address, new Callback() {
       @Override
       public void onFailure(Call call, IOException e) {
@@ -170,25 +177,25 @@ public class ChooseAreaFragment extends Fragment {
       public void onResponse(Call call, Response response) throws IOException {
         String responseText = response.body().string();
         boolean result = false;
-        if ("province".equals(type)){
-          result = Utility.handleProvincerResponse(responseText);
-        }else if ("city".equals(type)){
+        if ("province".equals(type)) {
+          result = Utility.handleProvinceResponse(responseText);
+        } else if ("city".equals(type)) {
           result = Utility.handleCityResponse(responseText, selectedProvince.getId());
-        }else if ("district".equals(type)){
+        } else if ("district".equals(type)) {
           result = Utility.handleDistrictResponse(responseText, selectedCity.getId());
         }
-        if (result){
+        if (result) {
           getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
               closeProgressDialog();
-              if ("province".equals(type)){
+              if ("province".equals(type)) {
                 queryProvinces();
                 closeProgressDialog();
-              }else if ("city".equals(type)){
+              } else if ("city".equals(type)) {
                 queryCities();
                 closeProgressDialog();
-              }else if ("district".equals(type)){
+              } else if ("district".equals(type)) {
                 queryDistrict();
                 closeProgressDialog();
               }
@@ -200,8 +207,8 @@ public class ChooseAreaFragment extends Fragment {
 
   }
 
-  private void showProgressDialog(){
-    if (progressDialog == null){
+  private void showProgressDialog() {
+    if (progressDialog == null) {
       progressDialog = new ProgressDialog(getActivity());
       progressDialog.setMessage("正在加载...");
       progressDialog.setCanceledOnTouchOutside(false);
@@ -209,8 +216,8 @@ public class ChooseAreaFragment extends Fragment {
     progressDialog.show();
   }
 
-  private void closeProgressDialog(){
-    if (progressDialog != null){
+  private void closeProgressDialog() {
+    if (progressDialog != null) {
       progressDialog.dismiss();
     }
   }

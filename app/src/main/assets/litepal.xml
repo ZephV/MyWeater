@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <litepal>
-    <dbname value="demo"/>
-    <version value="1"/>
-    <list>
-        <mapping class="com.example.zeph.myweater.db.Province"/>
-        <mapping class="com.example.zeph.myweater.db.City"/>
-        <mapping class="com.example.zeph.myweater.db.District"/>
-    </list>
+  <dbname value="demo" />
+  <version value="1" />
+  <list>
+    <mapping class="com.example.zeph.myweater.db.Province" />
+    <mapping class="com.example.zeph.myweater.db.City" />
+    <mapping class="com.example.zeph.myweater.db.District" />
+  </list>
 </litepal>
