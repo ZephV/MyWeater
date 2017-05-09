@@ -1,6 +1,7 @@
 package com.example.zeph.myweater;
 
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build.VERSION;
@@ -10,7 +11,6 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -90,9 +90,7 @@ public class WeatherActivity extends AppCompatActivity {
     swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
       @Override
       public void onRefresh() {
-        Log.d("msg", "onRefresh的mWeatherId是: " + mWeatherId);
         requestWeather(mWeatherId);
-        Log.d("msg", "运行到onRefresh");
       }
     });
     // Bing每日一图
@@ -168,8 +166,8 @@ public class WeatherActivity extends AppCompatActivity {
               showWeatherInfo(weather);
             } else {
               Toast.makeText(WeatherActivity.this, "获取天气信息不匹配", Toast.LENGTH_SHORT).show();
-              swipeRefresh.setRefreshing(false);
             }
+            swipeRefresh.setRefreshing(false);
           }
         });
       }
@@ -181,6 +179,7 @@ public class WeatherActivity extends AppCompatActivity {
    * 处理并展示Weather实体类的数据
    */
   private void showWeatherInfo(Weather weather) {
+
     String cityName = weather.basic.cityName;
     String updateTime = weather.basic.update.updateTime.split(" ")[1];
     String degree = weather.now.temperature + "℃";
@@ -213,6 +212,8 @@ public class WeatherActivity extends AppCompatActivity {
     carWashText.setText(carWash);
     sportText.setText(sport);
     weatherLayout.setVisibility(View.VISIBLE);
+    Intent intent = new Intent(this, AutoUpdateService.class);
+    startService(intent);
   }
 
   /**
