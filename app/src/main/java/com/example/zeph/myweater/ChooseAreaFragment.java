@@ -20,7 +20,6 @@ import com.example.zeph.myweater.db.City;
 import com.example.zeph.myweater.db.District;
 import com.example.zeph.myweater.db.Province;
 import com.example.zeph.myweater.util.HttpUtil;
-import com.example.zeph.myweater.util.LogUtil;
 import com.example.zeph.myweater.util.Utility;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,10 +76,17 @@ public class ChooseAreaFragment extends Fragment {
           queryDistrict();
         } else if (currentLevel == LEVEL_DISTRICT) {
           String weatherId = districtList.get(position).getWeatherId();
-          Intent intent = new Intent(getActivity(), WeatherActivity.class);
-          intent.putExtra("weather_id", weatherId);
-          startActivity(intent);
-          getActivity().finish();
+          if (getActivity() instanceof MainActivity) {
+            Intent intent = new Intent(getActivity(), WeatherActivity.class);
+            intent.putExtra("weather_id", weatherId);
+            startActivity(intent);
+            getActivity().finish();
+          }else if (getActivity() instanceof WeatherActivity){
+            WeatherActivity activity = (WeatherActivity) getActivity();
+            activity.drawerLayout.closeDrawers();
+            activity.swipeRefresh.setRefreshing(true);
+            activity.requestWeather(weatherId);
+          }
         }
       }
 
@@ -96,7 +102,6 @@ public class ChooseAreaFragment extends Fragment {
       }
     });
     queryProvinces();
-    LogUtil.d("msg", "A点爆破");
   }
 
   private void queryProvinces() {
@@ -144,7 +149,6 @@ public class ChooseAreaFragment extends Fragment {
         String.valueOf(selectedCity.getId())).find(District.class);
     if (districtList.size() > 0) {
       dataList.clear();
-      LogUtil.d("msg", "dataList清洁完毕");
       for (District district : districtList) {
         dataList.add(district.getDistrictName());
       }

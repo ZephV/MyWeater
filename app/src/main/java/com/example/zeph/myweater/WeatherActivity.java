@@ -6,9 +6,14 @@ import android.graphics.Color;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -18,7 +23,6 @@ import com.bumptech.glide.Glide;
 import com.example.zeph.myweater.db.Forecast;
 import com.example.zeph.myweater.db.Weather;
 import com.example.zeph.myweater.util.HttpUtil;
-import com.example.zeph.myweater.util.LogUtil;
 import com.example.zeph.myweater.util.Utility;
 import java.io.IOException;
 import okhttp3.Call;
@@ -27,6 +31,10 @@ import okhttp3.Response;
 
 public class WeatherActivity extends AppCompatActivity {
 
+  public DrawerLayout drawerLayout;
+  public SwipeRefreshLayout swipeRefresh;
+  private Button navButton;
+  private String mWeatherId;
   private ScrollView weatherLayout;
   private TextView titleCity;
   private TextView titleUpdateTime;
@@ -43,6 +51,7 @@ public class WeatherActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    // 判断SDK版本号是否大于21，如果是则全屏显示
     if (VERSION.SDK_INT >= 21) {
       View decorView = getWindow().getDecorView();
       decorView.setSystemUiVisibility(
@@ -52,19 +61,41 @@ public class WeatherActivity extends AppCompatActivity {
     setContentView(R.layout.activity_weather);
     // 初始化控件
     initAll();
+    // 设置navButton监听事件
+    navButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        drawerLayout.openDrawer(GravityCompat.START);
+      }
+    });
+    // 设置wipeRefresh属性
+    swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
+    // SharedPreferences
     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-    String weatherString = prefs.getString("Weather", null);
+    // 获取天气
+    String weatherString = prefs.getString("my_weather", null);
     if (weatherString != null) {
       // 有缓存时直接解析天气
       Weather weather = Utility.handleWeatherResponse(weatherString);
-      showWeatherId(weather);
-
+      if (weather != null) {
+        mWeatherId = weather.basic.weatherId;
+      }
+      showWeatherInfo(weather);
     } else {
-      //
-      String weatherId = getIntent().getStringExtra("weather_id");
+      // 无缓存时去服务器查询天气
+      mWeatherId = getIntent().getStringExtra("weather_id");
       weatherLayout.setVisibility(View.INVISIBLE);
-      requestWeather(weatherId);
+      requestWeather(mWeatherId);
     }
+    swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+      @Override
+      public void onRefresh() {
+        Log.d("msg", "onRefresh的mWeatherId是: " + mWeatherId);
+        requestWeather(mWeatherId);
+        Log.d("msg", "运行到onRefresh");
+      }
+    });
+    // Bing每日一图
     String bingPic = prefs.getString("bing_pic", null);
     if (bingPic != null) {
       Glide.with(this).load(bingPic).into(bingPicImg);
@@ -105,7 +136,7 @@ public class WeatherActivity extends AppCompatActivity {
   /**
    * 根据天气Id请求城市天气信息
    */
-  private void requestWeather(final String weatherId) {
+  public void requestWeather(String weatherId) {
     String weatherURL = "http://guolin.tech/api/weather?cityid=" + weatherId
         + "&key=f1f1ad050af84e4199a7d8440e4bd906";
     HttpUtil.sendOkHttpRequest(weatherURL, new Callback() {
@@ -115,7 +146,8 @@ public class WeatherActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
           @Override
           public void run() {
-            Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
+            Toast.makeText(WeatherActivity.this, "请求天气信息失败", Toast.LENGTH_SHORT).show();
+            swipeRefresh.setRefreshing(false);
           }
         });
       }
@@ -130,20 +162,25 @@ public class WeatherActivity extends AppCompatActivity {
             if (weather != null && "ok".equals(weather.status)) {
               SharedPreferences.Editor editor = PreferenceManager
                   .getDefaultSharedPreferences(WeatherActivity.this).edit();
-              editor.putString("weather", responseText);
+              editor.putString("my_weather", responseText);
               editor.apply();
-              showWeatherId(weather);
+              mWeatherId = weather.basic.weatherId;
+              showWeatherInfo(weather);
+            } else {
+              Toast.makeText(WeatherActivity.this, "获取天气信息不匹配", Toast.LENGTH_SHORT).show();
+              swipeRefresh.setRefreshing(false);
             }
           }
         });
       }
     });
+    loadBingPic();
   }
 
   /**
    * 处理并展示Weather实体类的数据
    */
-  private void showWeatherId(Weather weather) {
+  private void showWeatherInfo(Weather weather) {
     String cityName = weather.basic.cityName;
     String updateTime = weather.basic.update.updateTime.split(" ")[1];
     String degree = weather.now.temperature + "℃";
@@ -166,7 +203,6 @@ public class WeatherActivity extends AppCompatActivity {
       forecastLayout.addView(view);
     }
     if (weather.aqi != null) {
-      LogUtil.d("msg", "AQL设置成功");
       aqiText.setText(weather.aqi.city.aqi);
       pm25Text.setText(weather.aqi.city.pm25);
     }
@@ -183,6 +219,9 @@ public class WeatherActivity extends AppCompatActivity {
    * 初始化控件
    */
   private void initAll() {
+    drawerLayout = (DrawerLayout) findViewById(R.id.drawerK_layout);
+    navButton = (Button) findViewById(R.id.nav_btn);
+    swipeRefresh = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh);
     weatherLayout = (ScrollView) findViewById(R.id.weather_layout);
     titleCity = (TextView) findViewById(R.id.city_title);
     titleUpdateTime = (TextView) findViewById(R.id.weather_update_time);
